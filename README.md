@@ -19,7 +19,7 @@
 - 支持 Base64 订阅文本自动展开
 - 支持 `host[:port][#remark]` 格式的优选地址
 - 结果写入 Workers KV，生成 `/sub/:id` 短链
-- 相同输入自动去重（7 天 TTL）
+- 面板可选择 1 / 7 / 30 / 90 / 365 天或永久有效，默认 7 天；相同输入和有效期自动去重
 - 支持 `SUB_ACCESS_TOKEN` 访问令牌保护
 - 支持导出：Raw（Base64）/ Clash（YAML）/ Surge（文本）
 
@@ -121,7 +121,8 @@ cloudflaresub/
   "nodeLinks": "vmess://...\nvless://...",
   "preferredIps": "104.16.1.2#HK\n104.17.2.3:2053#US",
   "namePrefix": "CF",
-  "keepOriginalHost": true
+  "keepOriginalHost": true,
+  "ttlDays": "30"
 }
 ```
 
@@ -130,6 +131,7 @@ cloudflaresub/
 - `preferredIps`: 多行优选地址，格式 `host[:port][#remark]`
 - `namePrefix`: 节点名附加前缀
 - `keepOriginalHost`: 是否保留原始 Host/SNI（默认 `true`）
+- `ttlDays`: 有效期，支持 `1`/`7`/`30`/`90`/`365`/`never`，缺省为 `7`。相同内容选择不同有效期会生成不同短链接，重新生成相同内容不自动续期。
 
 返回示例（节选）：
 
@@ -171,7 +173,7 @@ curl "https://<worker>/sub/<id>?target=clash&token=<SUB_ACCESS_TOKEN>"
 ## 注意事项
 
 - `src/worker.js` 当前是 KV 短链方案，不依赖 `SUB_LINK_SECRET`
-- 每条订阅记录默认保存 7 天（TTL）
+- 每条订阅记录默认保存 7 天，可在网页上选择不同有效期，或选择永久有效（KV 不设置过期时间）；只影响新生成的链接
 - Surge 导出当前仅包含 `vmess` / `trojan`
 
 ## License
