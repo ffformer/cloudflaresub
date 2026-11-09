@@ -423,12 +423,23 @@ async function sha256Hex(input) {
     .join('');
 }
 
+function parseSubscriptionExpiry(value) {
+  const ttlDays = value === undefined || value === null || value === '' ? '7' : String(value);
+  if (!['1', '7', '30', '90', '365', 'never'].includes(ttlDays)) return null;
+  return {
+    ttlDays,
+    permanent: ttlDays === 'never',
+    seconds: ttlDays === 'never' ? null : Number(ttlDays) * 24 * 60 * 60,
+  };
+}
+
 async function buildDedupHash(body) {
   const normalized = {
     nodeLinks: normalizeLines(body.nodeLinks || ''),
     preferredIps: normalizeLines(body.preferredIps || ''),
     namePrefix: String(body.namePrefix || '').trim(),
     keepOriginalHost: body.keepOriginalHost !== false,
+    ttlDays: body.ttlDays,
   };
   return sha256Hex(JSON.stringify(normalized));
 }
@@ -440,6 +451,9 @@ async function handleGenerate(request, env, url) {
   } catch {
     return json({ ok: false, error: '请求体不是合法 JSON' }, 400);
   }
+
+  const expiry = parseSubscriptionExpiry(body.ttlDays);
+  if (!expiry) return json({ ok: false, error: '无效的订阅有效期，请从页面选项中选择' }, 400);
 
   const baseNodes = parseRawLinks(body.nodeLinks || '');
   const preferredEndpoints = parsePreferredEndpoints(body.preferredIps || '');
@@ -461,22 +475,16 @@ async function handleGenerate(request, env, url) {
     nodes,
   };
 
-  const dedupHash = await buildDedupHash(body);
+  const dedupHash = await buildDedupHash({ ...body, ttlDays: expiry.ttlDays });
   const dedupKey = `dedup:${dedupHash}`;
 
   let id = await env.SUB_STORE.get(dedupKey);
 
   if (!id) {
     id = await createUniqueShortId(env);
-    const ttl = 60 * 60 * 24 * 7; // 7天
-
-    await env.SUB_STORE.put(`sub:${id}`, JSON.stringify(payload), {
-      expirationTtl: ttl,
-    });
-
-    await env.SUB_STORE.put(dedupKey, id, {
-      expirationTtl: ttl,
-    });
+    const kvOptions = expiry.permanent ? {} : { expirationTtl: expiry.seconds };
+    await env.SUB_STORE.put(`sub:${id}`, JSON.stringify(payload), kvOptions);
+    await env.SUB_STORE.put(dedupKey, id, kvOptions);
   }
 
   const origin = url.origin;
@@ -493,6 +501,7 @@ async function handleGenerate(request, env, url) {
     storage: 'kv',
     deduplicated: true,
     shortId: id,
+    expiry: { ttlDays: expiry.ttlDays, permanent: expiry.permanent },
     urls: {
       auto: withToken(''),
       raw: withToken('raw'),
