@@ -43,6 +43,7 @@ form.addEventListener('submit', async (event) => {
     preferredIps: document.getElementById('preferredIps').value,
     namePrefix: document.getElementById('namePrefix').value,
     keepOriginalHost: document.getElementById('keepOriginalHost').checked,
+    ttlDays: document.getElementById('ttlDays').value,
   };
 
   submitBtn.disabled = true;
@@ -69,6 +70,12 @@ form.addEventListener('submit', async (event) => {
     surgeUrl.value = data.urls.surge;
 
     emptyState.classList.add('hidden');
+
+    const expiryInfo = document.getElementById('expiryInfo');
+    expiryInfo.textContent = data.expiry?.permanent
+      ? '订阅有效期：永久有效（除非手动删除 KV 数据）'
+      : `订阅有效期：${data.expiry?.ttlDays || 7} 天（从首次生成起算，相同内容重复生成不会续期）`;
+    expiryInfo.classList.remove('hidden');
 
     document.getElementById('statInputNodes').textContent = data.counts.inputNodes;
     document.getElementById('statEndpoints').textContent = data.counts.preferredEndpoints;
