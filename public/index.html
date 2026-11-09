@@ -73,6 +73,19 @@ cf.example.com:443#US-Edge"
             </div>
           </div>
 
+          <div>
+            <label for="ttlDays">4. 订阅链接有效期</label>
+            <select id="ttlDays" name="ttlDays">
+              <option value="1">1 天</option>
+              <option value="7" selected>7 天（默认）</option>
+              <option value="30">30 天</option>
+              <option value="90">90 天</option>
+              <option value="365">365 天</option>
+              <option value="never">永久有效</option>
+            </select>
+            <p class="hint">从首次生成起算；不同有效期生成不同链接。永久有效的记录不会自动过期。</p>
+          </div>
+
           <div class="actions">
             <button id="submitBtn" type="submit">生成订阅</button>
             <button id="fillDemoBtn" type="button" class="secondary">填入演示数据</button>
@@ -85,7 +98,7 @@ cf.example.com:443#US-Edge"
             <li>不会帮你找优选 IP，只负责把你现成的优选 IP 替换进节点。</li>
             <li>生成的链接是“同一份节点内容”的不同导出格式，分别给不同客户端使用。</li>
             <li>推荐勾选“保留原 Host / SNI”，这样更适合 Cloudflare CDN 场景。</li>
-            <li>订阅链接里的节点信息会通过服务端密钥加密，请不要把链接公开分享。</li>
+            <li>订阅链接包含访问令牌，请不要公开分享；永久有效链接请妥善保管。</li>
           </ul>
 
           <div class="client-box">
@@ -110,6 +123,7 @@ cf.example.com:443#US-Edge"
         </div>
 
         <div id="warningBox" class="warning hidden"></div>
+        <p id="expiryInfo" class="hint hidden" aria-live="polite"></p>
 
         <div id="emptyState" class="empty-state">
           还没有生成订阅。请先填写节点链接和优选 IP，然后点击“生成订阅”。
